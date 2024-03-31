@@ -54,6 +54,15 @@ This project uses Terraform to provision and manage resources on AWS. The archit
 
 ## Accesing the Application
 
+Note the output of the `terraform apply` command above. It will show the URL for your application under `application_dns`. Open this URL in a browser:
+
+   ```bash
+   Outputs:
+
+application_dns = "alb-frontent-1732600149.us-east-1.elb.amazonaws.com"
+ecs_cluster_id = "arn:aws:ecs:us-east-1:533267318629:cluster/example-cluster"
+rds_endpoint = "terraform-20240331191159247100000001.c1gywkyaw1qu.us-east-1.rds.amazonaws.com:3306"
+   ```
 
 ## Customizing the Deployment
 
