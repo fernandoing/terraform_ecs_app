@@ -4,6 +4,6 @@ provider "aws" {
 }
 
 # Create an ECS cluster
-resource "aws_ecs_cluster" "example" {
-  name = "example-cluster"
+resource "aws_ecs_cluster" "cluster" {
+  name = "finapp-cluster"
 }

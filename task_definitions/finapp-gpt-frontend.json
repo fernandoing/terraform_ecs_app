@@ -1,27 +1,27 @@
 [
   {
-      "name": "frontent",
-      "image": "nginx",
+      "name": "finapp-gpt-frontend",
+      "image": "ztrikerx21/finapp-gpt-frontend:latest",
       "essential": true,
       "portMappings": [
           {
-              "containerPort": 80,
-              "hostPort": 80,
+              "containerPort": 8080,
+              "hostPort": 8080,
               "protocol": "tcp"
           }
       ],
       "logConfiguration": {
         "logDriver": "awslogs",
         "options": {
-            "awslogs-group": "/ecs/frontent",
+            "awslogs-group": "/ecs/finapp-gpt-frontend",
             "awslogs-region": "us-east-1",
             "awslogs-stream-prefix": "application"
         }
     },
       "environment": [
           {
-              "name": "SOME_ENV_VARIABLE",
-              "value": "some_value"
+              "name": "PLACEHOLDER",
+              "value": "8080"
           }
       ]
   }

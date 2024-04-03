@@ -23,55 +23,59 @@ resource "aws_iam_role" "ecs_task_execution_role" {
 EOF
 }
 
-# data "aws_iam_policy_document" "ecs_logs_policy_document" {
-#   statement {
-#     effect    = "Allow"
-#     actions   = ["logs:CreateLogStream", "logs:PutLogEvents", "logs:CreateLogGroup", "logs:DescribeLogStreams", "logs:DescribeLogGroups", "logs:FilterLogEvents"]
-#     resources = ["arn:aws:logs:*:*:*"]
-#   }
-# }
 
-data "aws_iam_policy_document" "ecs_logs_policy" {
+data "aws_iam_policy_document" "ecs_task_role" {
   statement {
     actions = [
       "logs:CreateLogGroup",
       "logs:CreateLogStream",
       "logs:PutLogEvents",
-      "logs:DescribeLogStreams"
+      "logs:DescribeLogStreams",
+      "ecr:GetAuthorizationToken",
+      "ecr:BatchCheckLayerAvailability",
+      "ecr:GetDownloadUrlForLayer",
+      "ecr:BatchGetImage",
+
     ]
-
     effect = "Allow"
-
     resources = ["*"]
   }
+  statement {
+    actions   = ["secretsmanager:GetSecretValue"]
+    resources = [var.secret_arn]
+    effect = "Allow"
+  }
+
 }
 
-resource "aws_iam_policy" "ecs_logs_policy" {
-  name        = join("-", ["ecs_logs_policy", "${var.app_name}"])
+
+resource "aws_iam_policy" "ecs_task_role" {
+  name        = join("-", ["ecs_task_role", "${var.app_name}"])
   description = "Policy for ECS to push logs to CloudWatch"
-  policy      = data.aws_iam_policy_document.ecs_logs_policy.json
+  policy      = data.aws_iam_policy_document.ecs_task_role.json
 }
 
 
-resource "aws_iam_role_policy_attachment" "ecs_logs_policy_attachment" {
+resource "aws_iam_role_policy_attachment" "ecs_task_role_attachment" {
   role       = aws_iam_role.ecs_task_execution_role.name
-  policy_arn = aws_iam_policy.ecs_logs_policy.arn
+  policy_arn = aws_iam_policy.ecs_task_role.arn
 }
 
 # Create an ECS task definition
 resource "aws_ecs_task_definition" "app" {
-  family                = "${var.app_name}"
+  family                = var.app_name
   container_definitions =  var.container_definition
   requires_compatibilities = ["FARGATE"]
   network_mode             = "awsvpc"
   cpu                      = "2048"    // 2 vCPU
   memory                   = "4096"    // 4GB RAM
   execution_role_arn = aws_iam_role.ecs_task_execution_role.arn
+  task_role_arn = aws_iam_role.ecs_task_execution_role.arn
 }
 
 # Create an ECS service
 resource "aws_ecs_service" "example" {
-  name                               = join("-", ["service", "${var.app_name}"])
+  name                               = var.app_name
   cluster                            = var.aws_ecs_cluster
   task_definition                    = aws_ecs_task_definition.app.arn
   desired_count                      = var.desired_count
@@ -93,7 +97,7 @@ resource "aws_ecs_service" "example" {
   }
 
   depends_on = [
-    aws_iam_role_policy_attachment.ecs_logs_policy_attachment]
+    aws_iam_role_policy_attachment.ecs_task_role_attachment]
 }
 
 resource "aws_lb" "alb" {
@@ -119,7 +123,7 @@ resource "aws_lb_listener" "listener" {
 
 resource "aws_lb_target_group" "target_group" {
   name     = join("-", ["tg", "${var.app_name}"])
-  port     = 80
+  port     = var.app_port
   protocol = "HTTP"
   vpc_id   = var.vpc_id
   target_type = "ip"
@@ -127,19 +131,12 @@ resource "aws_lb_target_group" "target_group" {
 
   health_check {
     interval           = 30
-    path               = "/"
-    timeout            = 3
+    path               = var.health_path
+    timeout            = 5
     healthy_threshold   = 3
     unhealthy_threshold = 3
   }
 }
-
-# // Attach the target group to the ECS service
-# resource "aws_lb_target_group_attachment" "target_group_attachment" {
-#   target_group_arn = aws_lb_target_group.target_group.arn
-#   target_id        = aws_ecs_service.example.network_interface[0].id
-#   port             = 80
-# }
 
 # Load balancer security group
 resource "aws_security_group" "load_balancer" {
@@ -163,7 +160,7 @@ resource "aws_security_group" "load_balancer" {
 
 # Fargate instance security group
 resource "aws_security_group" "fargate_instance" {
-  name        = "fargate-instance-sg"
+  name        = join("-", ["fargate", "${var.app_name}"])
   description = "Fargate instance security group"
   vpc_id      = var.vpc_id
 
@@ -196,7 +193,7 @@ resource "aws_cloudwatch_log_group" "nginx_log_group" {
 }
 
 resource "aws_ecr_repository" "repository" {
-  name                 = join("-", ["repository", "${var.app_name}"])
+  name                 = var.app_name
   image_tag_mutability = "MUTABLE"
   
   image_scanning_configuration {

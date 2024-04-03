@@ -36,3 +36,12 @@ variable "maximum_percent" {
 variable "container_definition" {
   
 }
+
+variable "health_path"{
+  type    = string
+  default = "/"
+}
+
+variable "secret_arn"{
+  type     = string
+}

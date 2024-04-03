@@ -10,6 +10,7 @@ resource "aws_db_instance" "instance" {
   instance_class       = var.instance_type
   username             = var.username
   password             = var.password
+  publicly_accessible = true
   #parameter_group_name = join(".",["default", var.engine, var.engine_version])
   skip_final_snapshot  = true
   
@@ -18,7 +19,6 @@ resource "aws_db_instance" "instance" {
   db_subnet_group_name = aws_db_subnet_group.instance_subnets.name
 
   backup_retention_period = 0
-  publicly_accessible = false
 }
 
 resource "aws_db_subnet_group" "instance_subnets" {

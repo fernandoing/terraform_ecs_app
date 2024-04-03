@@ -1,0 +1,28 @@
+[
+  {
+      "name": "finapp-gpt-backend",
+      "image": "ztrikerx21/finapp-gpt-backend:latest",
+      "essential": true,
+      "portMappings": [
+          {
+              "containerPort": 5000,
+              "hostPort": 5000,
+              "protocol": "tcp"
+          }
+      ],
+      "logConfiguration": {
+        "logDriver": "awslogs",
+        "options": {
+            "awslogs-group": "/ecs/finapp-gpt-backend",
+            "awslogs-region": "us-east-1",
+            "awslogs-stream-prefix": "application"
+        }
+    },
+      "environment": [
+          {
+              "name": "SECRETS_NAME",
+              "value": "backend_secret_config"
+          }
+      ]
+  }
+]
